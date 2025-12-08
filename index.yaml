@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  spectech:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-12-08T06:04:15.167126045Z"
+    description: A Helm chart for deploying SpecTech application with templating
+    digest: b9328009443b6cfd2dd13a81522f745b4324e68d64d3299e063d16fa4113463b
+    name: spectech
+    type: application
+    urls:
+    - spectech-0.1.0.tgz
+    version: 0.1.0
+generated: "2025-12-08T06:04:15.166644137Z"
