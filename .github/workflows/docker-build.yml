@@ -30,7 +30,7 @@ jobs:
       - name: Calculate image tag
         id: calc_tag
         run: |
-          TAG_NUMBER=$(({{ env.TAG_START_NUMBER }} + ${{ github.run_number }} - 1))
+          TAG_NUMBER=$((${{ env.TAG_START_NUMBER }} + ${{ github.run_number }} - 1))
           echo "image_tag=${TAG_NUMBER}" >> $GITHUB_OUTPUT
           echo "Image tag will be: ${TAG_NUMBER}"
 
