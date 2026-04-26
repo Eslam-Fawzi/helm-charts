@@ -9,14 +9,14 @@ on:
       - published
 
 env:
-  # Notification recipients (comma-separated emails)
-  NOTIFICATION_RECIPIENTS: "goat.fine2020@gmail.com,eslamfawzi41@gmail.com"
   # Dockerfile path
   DOCKERFILE_PATH: "."
   # Docker image name
   IMAGE_NAME: "helm-charts"
   # Image tag starting number (will increment by 1 per push)
   TAG_START_NUMBER: "1001"
+  # Exclude these emails from notifications (comma-separated)
+  EXCLUDE_EMAILS: ""
 
 jobs:
   build:
@@ -42,39 +42,21 @@ jobs:
         run: |
           docker build -t ${{ secrets.NEXUS_REGISTRY }}/${{ secrets.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.calc_tag.outputs.image_tag }} ${{ env.DOCKERFILE_PATH }}
 
-      - name: Notify build success by email
+      - name: Notify build success
         if: always() && steps.build_image.outcome == 'success'
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "✅ Docker build succeeded - ${{ github.repository }}"
-          to: ${{ env.NOTIFICATION_RECIPIENTS }}
-          from: ${{ secrets.EMAIL_FROM }}
-          body: |
-            Docker image build succeeded.
-            Repository: ${{ github.repository }}
-            Commit: ${{ github.sha }}
-            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          echo "✅ Docker build succeeded for ${{ github.repository }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        shell: bash
 
-      - name: Notify build failure by email
+      - name: Notify build failure
         if: always() && steps.build_image.outcome == 'failure'
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "❌ Docker build failed - ${{ github.repository }}"
-          to: ${{ env.NOTIFICATION_RECIPIENTS }}
-          from: ${{ secrets.EMAIL_FROM }}
-          body: |
-            Docker image build failed.
-            Repository: ${{ github.repository }}
-            Commit: ${{ github.sha }}
-            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          echo "❌ Docker build failed for ${{ github.repository }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        shell: bash
 
       - name: Push Docker image
         id: push_image
@@ -89,56 +71,31 @@ jobs:
 
           docker push ${{ secrets.NEXUS_REGISTRY }}/${{ secrets.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:latest
 
-      - name: Notify docker push success by email
+      - name: Notify docker push success
         if: always() && steps.push_image.outcome == 'success' && steps.push_latest.outcome == 'success'
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "✅ Docker push succeeded - ${{ github.repository }}"
-          to: ${{ env.NOTIFICATION_RECIPIENTS }}
-          from: ${{ secrets.EMAIL_FROM }}
-          body: |
-            Docker image push succeeded.
-            Image: ${{ secrets.NEXUS_REGISTRY }}/${{ secrets.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.calc_tag.outputs.image_tag }}
-            Also pushed: latest
-            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          echo "✅ Docker push succeeded for ${{ github.repository }}"
+          echo "Image: ${{ secrets.NEXUS_REGISTRY }}/${{ secrets.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.calc_tag.outputs.image_tag }}"
+          echo "Also pushed: latest"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        shell: bash
 
-      - name: Notify docker push failure by email
+      - name: Notify docker push failure
         if: always() && (steps.push_image.outcome == 'failure' || steps.push_latest.outcome == 'failure')
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "❌ Docker push failed - ${{ github.repository }}"
-          to: ${{ env.NOTIFICATION_RECIPIENTS }}
-          from: ${{ secrets.EMAIL_FROM }}
-          body: |
-            Docker image push failed.
-            Image: ${{ secrets.NEXUS_REGISTRY }}/${{ secrets.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.calc_tag.outputs.image_tag }}
-            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          echo "❌ Docker push failed for ${{ github.repository }}"
+          echo "Image: ${{ secrets.NEXUS_REGISTRY }}/${{ secrets.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.calc_tag.outputs.image_tag }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        shell: bash
 
   notify-release:
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Notify new release by email
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "🚀 New release published - ${{ github.repository }}"
-          to: ${{ env.NOTIFICATION_RECIPIENTS }}
-          from: ${{ secrets.EMAIL_FROM }}
-          body: |
-            A new release has been published.
-            Repository: ${{ github.repository }}
-            Release: ${{ github.event.release.tag_name }}
-            URL: ${{ github.event.release.html_url }}
+      - name: Notify new release
+        run: |
+          echo "🚀 New release published for ${{ github.repository }}"
+          echo "Release: ${{ github.event.release.tag_name }}"
+          echo "URL: ${{ github.event.release.html_url }}"
+        shell: bash
